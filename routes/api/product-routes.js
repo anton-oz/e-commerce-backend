@@ -22,7 +22,19 @@ router.get('/:id', async (req, res) => {
   // find a single product by its `id`
   // be sure to include its associated Category and Tag data
   try {
-    const singleProduct = await Product.findByPk(req.params.id);
+    const singleProduct = await Product.findByPk(req.params.id,
+      {
+        include: [
+          { model: Category }, 
+          { 
+            model: Tag,
+            through: {
+              attributes: ['id', 'tag_id', 'product_id'],
+            },
+          },
+        ],
+      },
+    );
     if (!singleProduct) {
       res.status(404).json({error: "no product with that id"})
       return;
@@ -90,11 +102,11 @@ router.put('/:id', (req, res) => {
             };
           });
 
-            // figure out which ones to remove
+          // figure out which ones to remove
           const productTagsToRemove = productTags
           .filter(({ tag_id }) => !req.body.tagIds.includes(tag_id))
           .map(({ id }) => id);
-                  // run both actions
+          // run both actions
           return Promise.all([
             ProductTag.destroy({ where: { id: productTagsToRemove } }),
             ProductTag.bulkCreate(newProductTags),
